@@ -1,0 +1,136 @@
+import java.util.*;
+
+public class RouteFinder {
+
+    private static class Graph {
+        private final Map<String, Map<String, Integer>> adjList = new HashMap<>();
+
+        public void addLocation(String location) {
+            adjList.putIfAbsent(location, new HashMap<>());
+        }
+
+        public void addConnection(String from, String to, int distance) {
+            adjList.get(from).put(to, distance);
+            adjList.get(to).put(from, distance); // Assuming undirected graph
+        }
+
+        public void displayGraph() {
+            for (var entry : adjList.entrySet()) {
+                System.out.println(entry.getKey() + " -> " + entry.getValue());
+            }
+        }
+
+        public List<String> findShortestPath(String start, String end) {
+            PriorityQueue<Node> pq = new PriorityQueue<>(Comparator.comparingInt(n -> n.distance));
+            Map<String, Integer> distances = new HashMap<>();
+            Map<String, String> previous = new HashMap<>();
+            Set<String> visited = new HashSet<>();
+
+            adjList.keySet().forEach(location -> distances.put(location, Integer.MAX_VALUE));
+            distances.put(start, 0);
+            pq.add(new Node(start, 0));
+
+            while (!pq.isEmpty()) {
+                Node current = pq.poll();
+                if (!visited.add(current.name)) continue;
+
+                if (current.name.equals(end)) break;
+
+                for (var neighbor : adjList.get(current.name).entrySet()) {
+                    if (visited.contains(neighbor.getKey())) continue;
+
+                    int newDist = current.distance + neighbor.getValue();
+                    if (newDist < distances.get(neighbor.getKey())) {
+                        distances.put(neighbor.getKey(), newDist);
+                        previous.put(neighbor.getKey(), current.name);
+                        pq.add(new Node(neighbor.getKey(), newDist));
+                    }
+                }
+            }
+
+            return constructPath(previous, start, end);
+        }
+
+        private List<String> constructPath(Map<String, String> previous, String start, String end) {
+            LinkedList<String> path = new LinkedList<>();
+            for (String at = end; at != null; at = previous.get(at)) {
+                path.addFirst(at);
+            }
+            return path.isEmpty() || !path.getFirst().equals(start) ? Collections.emptyList() : path;
+        }
+
+        private static class Node {
+            String name;
+            int distance;
+
+            Node(String name, int distance) {
+                this.name = name;
+                this.distance = distance;
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        Graph graph = new Graph();
+
+        while (true) {
+            System.out.println("\n--- RouteFinder Menu ---");
+            System.out.println("1. Add Location");
+            System.out.println("2. Add Connection");
+            System.out.println("3. Display Graph");
+            System.out.println("4. Find Shortest Path");
+            System.out.println("5. Exit");
+            System.out.print("Choose an option: ");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (choice) {
+                case 1:
+                    System.out.print("Enter location name: ");
+                    String location = scanner.nextLine();
+                    graph.addLocation(location);
+                    System.out.println("Location added.");
+                    break;
+
+                case 2:
+                    System.out.print("Enter source location: ");
+                    String from = scanner.nextLine();
+                    System.out.print("Enter destination location: ");
+                    String to = scanner.nextLine();
+                    System.out.print("Enter distance: ");
+                    int distance = scanner.nextInt();
+                    graph.addConnection(from, to, distance);
+                    System.out.println("Connection added.");
+                    break;
+
+                case 3:
+                    System.out.println("Graph connections:");
+                    graph.displayGraph();
+                    break;
+
+                case 4:
+                    System.out.print("Enter start location: ");
+                    String start = scanner.nextLine();
+                    System.out.print("Enter end location: ");
+                    String end = scanner.nextLine();
+                    List<String> path = graph.findShortestPath(start, end);
+                    if (path.isEmpty()) {
+                        System.out.println("No path found.");
+                    } else {
+                        System.out.println("Shortest path: " + String.join(" -> ", path));
+                    }
+                    break;
+
+                case 5:
+                    System.out.println("Exiting RouteFinder. Goodbye!");
+                    scanner.close();
+                    return;
+
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
+    }
+}
